@@ -112,6 +112,28 @@ int object_write(ObjectType type, const void *data, size_t len, ObjectID *id_out
     buf[header_len] = '\0';
     memcpy(buf + header_len + 1, data, len);
     
+    compute_hash(buf, total_len, id_out);
+
+    if (object_exists(id_out)) {
+        free(buf);
+        return 0;
+    }
+
+    char hex[HASH_HEX_SIZE + 1];
+    hash_to_hex(id_out, hex);
+
+    char dir[512];
+    snprintf(dir, sizeof(dir), "%s/%.2s", OBJECTS_DIR, hex);
+
+    mkdir(dir, 0755); 
+
+    char final_path[512];
+    object_path(id_out, final_path, sizeof(final_path));
+
+    char temp_path[1024];
+    snprintf(temp_path, sizeof(temp_path), "%s/tmp", dir);
+
+    
     (void)type; (void)data; (void)len; (void)id_out;
     return -1;
 }
