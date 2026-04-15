@@ -15,7 +15,8 @@
 #include <string.h>
 #include <dirent.h>
 #include <sys/stat.h>
-
+#include "pes.h"
+int object_write(ObjectType type, const void *data, size_t len, ObjectID *id_out);
 // ─── Mode Constants ─────────────────────────────────────────────────────────
 
 #define MODE_FILE      0100644
@@ -130,8 +131,22 @@ int tree_serialize(const Tree *tree, void **data_out, size_t *len_out) {
 //
 // Returns 0 on success, -1 on error.
 int tree_from_index(ObjectID *id_out) {
-    // TODO: Implement recursive tree building
-    // (See Lab Appendix for logical steps)
-    (void)id_out;
-    return -1;
+    DIR *dir = opendir(".");
+    if (!dir) return -1;
+
+    Tree tree;
+    tree.count = 0;
+
+    struct dirent *entry;
+    while ((entry = readdir(dir)) != NULL && tree.count < MAX_TREE_ENTRIES) {
+        /* Skip . and .. and .pes */
+        if (strcmp(entry->d_name, ".") == 0 ||
+            strcmp(entry->d_name, "..") == 0 ||
+            strcmp(entry->d_name, ".pes") == 0) {
+            continue;
+        }
+
+        TreeEntry *te = &tree.entries[tree.count];
+
+    return 0;
 }
