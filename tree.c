@@ -147,6 +147,8 @@ int tree_from_index(ObjectID *id_out) {
         }
 
         TreeEntry *te = &tree.entries[tree.count];
+    te->mode = get_file_mode(entry->d_name);
+    snprintf(te->name, sizeof(te->name), "%s", entry->d_name);
 
     return 0;
 }
