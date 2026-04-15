@@ -160,6 +160,11 @@ int tree_from_index(ObjectID *id_out) {
         void *data = malloc(size);
         fread(data, 1, size, f);
         fclose(f);
+        if (object_write(OBJ_BLOB, data, size, &te->hash) < 0) {
+            free(data);
+            closedir(dir);
+            return -1;
+        }
 
     return 0;
 }
