@@ -197,4 +197,16 @@ int object_read(const ObjectID *id, ObjectType *type_out, void **data_out, size_
     
     ObjectID computed;
     compute_hash(buf, size, &computed);
+    
+    if (memcmp(&computed, id, sizeof(ObjectID)) != 0) {
+        free(buf);
+        return -1;
+    }
+
+    char *sep = memchr(buf, '\0', size);
+    if (!sep) { free(buf); return -1; }
+
+    char type_str[16];
+    size_t len;
+    sscanf(buf, "%15s %zu", type_str, &len);
 }
