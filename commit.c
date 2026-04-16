@@ -198,6 +198,10 @@ int commit_create(const char *message, ObjectID *commit_id_out) {
         return -1;
     }
 
+    ObjectID parent;
+    int has_parent = (head_read(&parent) == 0);
+
+    
 
     return 0;
 }
