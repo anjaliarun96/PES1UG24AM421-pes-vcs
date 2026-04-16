@@ -112,5 +112,17 @@ int index_add(Index *index, const char *path) {
     if (st.st_size > 0) fread(data, 1, st.st_size, f);
     fclose(f);
 
-    
+    ObjectID bid;
+    object_write(OBJ_BLOB, data, st.st_size, &bid);
+    free(data);
+
+    IndexEntry *e = NULL;
+    for (int i = 0; i < index->count; i++) {
+        if (strcmp(index->entries[i].path, path) == 0) {
+            e = &index->entries[i];
+            break;
+        }
+    }
+
+
 }
