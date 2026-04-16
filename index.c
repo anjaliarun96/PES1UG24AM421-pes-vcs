@@ -102,4 +102,15 @@ int index_save(const Index *index) {
     return 0;
 }
 
+int index_add(Index *index, const char *path) {
+    struct stat st;
+    if (stat(path, &st) != 0) return -1;
 
+    FILE *f = fopen(path, "rb");
+    if (!f) return -1;
+    void *data = malloc(st.st_size + 1);
+    if (st.st_size > 0) fread(data, 1, st.st_size, f);
+    fclose(f);
+
+    
+}
