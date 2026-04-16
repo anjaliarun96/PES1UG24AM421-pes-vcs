@@ -37,7 +37,6 @@ int commit_parse(const void *data, size_t len, Commit *commit_out) {
     const char *p = (const char *)data;
     char hex[HASH_HEX_SIZE + 1];
 
-    // "tree <hex>\n"
     if (sscanf(p, "tree %64s\n", hex) != 1) return -1;
     if (hex_to_hash(hex, &commit_out->tree) != 0) return -1;
     p = strchr(p, '\n') + 1;
@@ -52,7 +51,6 @@ int commit_parse(const void *data, size_t len, Commit *commit_out) {
         commit_out->has_parent = 0;
     }
 
-    // "author <name> <timestamp>\n"
     char author_buf[256];
     uint64_t ts;
     if (sscanf(p, "author %255[^\n]\n", author_buf) != 1) return -1;
@@ -71,8 +69,6 @@ int commit_parse(const void *data, size_t len, Commit *commit_out) {
     return 0;
 }
 
-// Serialize a Commit struct to the text format.
-// Caller must free(*data_out).
 int commit_serialize(const Commit *commit, void **data_out, size_t *len_out) {
     char tree_hex[HASH_HEX_SIZE + 1];
     char parent_hex[HASH_HEX_SIZE + 1];
@@ -101,7 +97,7 @@ int commit_serialize(const Commit *commit, void **data_out, size_t *len_out) {
     return 0;
 }
 
-// Walk commit history from HEAD to the root.
+
 int commit_walk(commit_walk_fn callback, void *ctx) {
     ObjectID id;
     if (head_read(&id) != 0) return -1;
@@ -125,7 +121,7 @@ int commit_walk(commit_walk_fn callback, void *ctx) {
     return 0;
 }
 
-// Read the current HEAD commit hash.
+
 int head_read(ObjectID *id_out) {
     FILE *f = fopen(HEAD_FILE, "r");
     if (!f) return -1;
@@ -194,8 +190,14 @@ int head_update(const ObjectID *new_commit) {
 //
 // Returns 0 on success, -1 on error.
 int commit_create(const char *message, ObjectID *commit_id_out) {
-    // TODO: Implement commit creation
-    // (See Lab Appendix for logical steps)
-    (void)message; (void)commit_id_out;
-    return -1;
+    if (!message || !commit_id_out) return -1;
+
+    ObjectID tree;
+    if (tree_from_index(&tree) != 0) {
+        fprintf(stderr, "error: tree_from_index failed\n");
+        return -1;
+    }
+
+
+    return 0;
 }

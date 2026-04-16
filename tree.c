@@ -16,6 +16,8 @@
 #include <dirent.h>
 #include <sys/stat.h>
 #include "pes.h"
+#include "index.h"
+
 int object_write(ObjectType type, const void *data, size_t len, ObjectID *id_out);
 // ─── Mode Constants ─────────────────────────────────────────────────────────
 
@@ -130,77 +132,63 @@ int tree_serialize(const Tree *tree, void **data_out, size_t *len_out) {
 //   - object_write    : save that binary buffer to the store as OBJ_TREE
 //
 // Returns 0 on success, -1 on error.
+
+
 int tree_from_index(ObjectID *id_out) {
-    DIR *dir = opendir(".");
-    if (!dir) return -1;
+    if (!id_out) return -1;
+
+    Index index;
+    if (index_load(&index) != 0) {
+        fprintf(stderr, "error: index_load failed\n");
+        return -1;
+    }
+
+    if (index.count == 0) {
+        fprintf(stderr, "error: no files staged\n");
+        return -1;
+    }
 
     Tree tree;
     tree.count = 0;
 
-    struct dirent *entry;
-    while ((entry = readdir(dir)) != NULL && tree.count < MAX_TREE_ENTRIES) {
+    for (int i = 0; i < index.count; i++) {
+        const IndexEntry *e = &index.entries[i];
 
-        if (strcmp(entry->d_name, ".") == 0 ||
-            strcmp(entry->d_name, "..") == 0 ||
-            strcmp(entry->d_name, ".pes") == 0) {
-            continue;
+        if (tree.count >= MAX_TREE_ENTRIES) {
+            fprintf(stderr, "tree full\n");
+            return -1;
         }
 
         TreeEntry *te = &tree.entries[tree.count];
 
+        // Use staged mode and bare filename (not path with /)
+        te->mode = e->mode;
 
-        te->mode = get_file_mode(entry->d_name);
-        
-        if (te->mode == MODE_DIR) continue;
+        // Extract last component (filename) from path
+        const char *basename = strrchr(e->path, '/');
+        if (basename) basename++;  // skip '/'
+        else basename = e->path;
 
-        snprintf(te->name, sizeof(te->name), "%s", entry->d_name);
-
-
-        FILE *f = fopen(entry->d_name, "rb");
-        if (!f) continue;
-        
-
-        fseek(f, 0, SEEK_END);
-        long size = ftell(f);
-        rewind(f);
-        
-        if (size <= 0) {
-            fclose(f);
-            continue;
-        }
-
-        void *data = malloc(size);
-        if (!data) {
-          fclose(f);
-          closedir(dir);
-          return -1;
-        }
-
-        fread(data, 1, size, f);
-        
-        
-        fclose(f);
-
-
-        if (object_write(OBJ_BLOB, data, size, &te->hash) < 0) {
-            free(data);
-            closedir(dir);
+        if (strlen(basename) >= sizeof(te->name)) {
+            fprintf(stderr, "error: name too long: %s\n", basename);
             return -1;
         }
+        snprintf(te->name, sizeof(te->name), "%s", basename);
 
-        free(data);
+        te->hash = e->hash;
+
         tree.count++;
     }
 
-    closedir(dir);
+    void *data = NULL;
+    size_t len = 0;
+    if (tree_serialize(&tree, &data, &len) != 0) {
+        fprintf(stderr, "error: tree_serialize failed\n");
+        return -1;
+    }
 
-
-    void *data;
-    size_t len;
-    if (tree_serialize(&tree, &data, &len) < 0) return -1;
-
-
-    if (object_write(OBJ_TREE, data, len, id_out) < 0) {
+    if (object_write(OBJ_TREE, data, len, id_out) != 0) {
+        fprintf(stderr, "error: object_write(OBJ_TREE) failed\n");
         free(data);
         return -1;
     }
