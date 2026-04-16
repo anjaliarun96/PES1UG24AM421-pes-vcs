@@ -12,7 +12,7 @@
 // Note: there is a blank line between the headers and the message.
 //
 // PROVIDED functions: commit_parse, commit_serialize, commit_walk, head_read, head_update
-// TODO functions:     commit_create
+// TODO functions:    commit_create
 
 #include "commit.h"
 #include "index.h"
@@ -242,6 +242,7 @@ int commit_create(const char *message, ObjectID *commit_id_out) {
         fprintf(stderr, "error: head_update failed\n");
         return -1;
     }
+
 
     return 0;
 }
