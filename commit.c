@@ -222,7 +222,13 @@ int commit_create(const char *message, ObjectID *commit_id_out) {
 
     snprintf(c.message, sizeof(c.message), "%s", message);
 
-    
+    void *data = NULL;
+    size_t len = 0;
+    if (commit_serialize(&c, &data, &len) != 0) {
+        fprintf(stderr, "error: commit_serialize failed\n");
+        return -1;
+    }
 
+    
     return 0;
 }
