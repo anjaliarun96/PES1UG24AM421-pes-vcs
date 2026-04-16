@@ -100,9 +100,9 @@ int object_write(ObjectType type, const void *data, size_t len, ObjectID *id_out
     else if (type == OBJ_COMMIT) type_str = "commit";
     else return -1;
 
-
     char header[64];
     int header_len = snprintf(header, sizeof(header), "%s %zu", type_str, len);
+    if (header_len < 0 || (size_t)header_len >= sizeof(header)) return -1;
 
     size_t total_len = header_len + 1 + len;
     char *buf = malloc(total_len);
@@ -110,25 +110,28 @@ int object_write(ObjectType type, const void *data, size_t len, ObjectID *id_out
 
     memcpy(buf, header, header_len);
     buf[header_len] = '\0';
-    memcpy(buf + header_len + 1, data, len);
 
+    if (len > 0) {
+        if (!data) {
+            free(buf);
+            return -1;
+        }
+        memcpy(buf + header_len + 1, data, len);
+    }
 
     compute_hash(buf, total_len, id_out);
-
 
     if (object_exists(id_out)) {
         free(buf);
         return 0;
     }
 
-
     char hex[HASH_HEX_SIZE + 1];
     hash_to_hex(id_out, hex);
 
     char dir[512];
     snprintf(dir, sizeof(dir), "%s/%.2s", OBJECTS_DIR, hex);
-
-    mkdir(dir, 0755);  
+    mkdir(dir, 0755);
 
     char final_path[512];
     object_path(id_out, final_path, sizeof(final_path));
@@ -137,12 +140,14 @@ int object_write(ObjectType type, const void *data, size_t len, ObjectID *id_out
     snprintf(temp_path, sizeof(temp_path), "%s/tmp", dir);
 
     int fd = open(temp_path, O_CREAT | O_WRONLY | O_TRUNC, 0644);
-    if (fd < 0) { free(buf); return -1; }
+    if (fd < 0) {
+        free(buf);
+        return -1;
+    }
 
     write(fd, buf, total_len);
     fsync(fd);
     close(fd);
-
 
     rename(temp_path, final_path);
 
@@ -155,7 +160,6 @@ int object_write(ObjectType type, const void *data, size_t len, ObjectID *id_out
     free(buf);
     return 0;
 }
-
 // Read an object from the store.
 //
 // Steps:
