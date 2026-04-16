@@ -124,5 +124,16 @@ int index_add(Index *index, const char *path) {
         }
     }
 
+    if (!e) {
+        if (index->count >= MAX_INDEX_ENTRIES) return -1;
+        e = &index->entries[index->count++];
+        strncpy(e->path, path, sizeof(e->path) - 1);
+    }
 
+    e->mode = get_file_mode(path);
+    e->hash = bid;
+    e->mtime_sec = (uint64_t)st.st_mtime;
+    e->size = (uint32_t)st.st_size;
+
+    return index_save(index);
 }
