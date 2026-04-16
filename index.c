@@ -88,4 +88,18 @@ int index_save(const Index *index) {
     FILE *f = fopen(tmp, "w");
     if (!f) return -1;
 
+    for (int i = 0; i < index->count; i++) {
+        char hex[HASH_HEX_SIZE + 1];
+        hash_to_hex(&index->entries[i].hash, hex);
+        fprintf(f, "%o %s %lu %u %s\n", 
+                index->entries[i].mode, hex, 
+                (unsigned long)index->entries[i].mtime_sec, 
+                (unsigned int)index->entries[i].size, 
+                index->entries[i].path);
+    }
+    fclose(f);
+    rename(tmp, PES_INDEX_FILE);
+    return 0;
 }
+
+
